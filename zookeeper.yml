@@ -1,0 +1,197 @@
+# application/zookeeper/zookeeper.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-headless-service
+  labels:
+    app: zk
+spec:
+  ports:
+  - port: 2888
+    name: server
+  - port: 3888
+    name: leader-election
+  clusterIP: None
+  selector:
+    app: zk
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-cluster-service
+  labels:
+    app: zk
+spec:
+  ports:
+  - port: 2181
+    name: client
+  selector:
+    app: zk
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zk-cm
+data:
+  zk.replicas: "3"      # zk集群中的节点数
+  jvm.heap: "500M"      # jvm堆内存限制
+  tick: "2000"          # 时间配置中的基本单位（以毫秒为单位）
+  init: "10"            # 初始同步的最大间隔次数
+  sync: "5"             # 同步的最大间隔次数
+  client.cnxns: "60"    # 客户端连接的最大数量
+  snap.retain: "3"      # 要保留在dataDir中的快照数
+  purge.interval: "12"  # 清除任务间隔（以小时为单位），0为禁用自动清除
+---
+# 设置应用POD集群处于运行状态最低个数
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: zk-pdb
+spec:
+  selector:
+    matchLabels:
+      app: zk
+  maxUnavailable: 1   # 表示最大不可用PO数，表示应用POD集群处于不可用状态的最大POD数
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zk
+spec:
+  selector:
+    matchLabels:
+      app: zk
+  serviceName: zk-headless-service
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady   # 采用顺序启动的方式
+  template:
+    metadata:
+      labels:
+        app: zk
+    spec:
+      affinity:
+        podAntiAffinity:  # pod反关联性规则
+          requiredDuringSchedulingIgnoredDuringExecution:   # 当该节点满足以下规则时，pod不希望被调度到该节点
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                    - zk
+              topologyKey: "kubernetes.io/hostname"   # 为了控制在同一主机上没有两个实例以实现高可用
+      containers:
+      - name: zookeeper
+        imagePullPolicy: Always
+        image: "zookeeper:3.5.6"
+        resources:
+          requests:
+            memory: "1Gi"   # 内存需求
+            cpu: "0.5"      # cpu使用率
+        ports:
+        - containerPort: 2181
+          name: client
+        - containerPort: 2888
+          name: server
+        - containerPort: 3888
+          name: leader-election
+        env:
+        - name : ZK_REPLICAS
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: zk.replicas
+        - name : ZK_HEAP_SIZE
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: jvm.heap
+        - name : ZK_TICK_TIME
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: tick
+        - name : ZK_INIT_LIMIT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: init
+        - name : ZK_SYNC_LIMIT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: sync
+        - name : ZK_MAX_CLIENT_CNXNS
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: client.cnxns
+        - name: ZK_SNAP_RETAIN_COUNT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: snap.retain
+        - name: ZK_PURGE_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: purge.interval
+        - name: ZK_CLIENT_PORT
+          value: "2181"
+        - name: ZK_SERVER_PORT
+          value: "2888"
+        - name: ZK_ELECTION_PORT
+          value: "3888"
+        command:
+        - sh
+        - -c
+        - "start-zookeeper \
+          --servers=$ZK_REPLICAS \
+          --data_dir=/var/lib/zookeeper/data \
+          --data_log_dir=/var/lib/zookeeper/data/log \
+          --conf_dir=/opt/zookeeper/conf \
+          --client_port=$ZK_CLIENT_PORT \
+          --server_port=$ZK_SERVER_PORT \
+          --election_port=$ZK_ELECTION_PORT \
+          --tick_time=$ZK_TICK_TIME \
+          --init_limit=$ZK_INIT_LIMIT \
+          --sync_limit=$ZK_SYNC_LIMIT \
+          --heap=$ZK_HEAP_SIZE \
+          --max_client_cnxns=$ZK_MAX_CLIENT_CNXNS \
+          --snap_retain_count=$ZK_SNAP_RETAIN_COUNT \
+          --purge_interval=$ZK_PURGE_INTERVAL \
+          --max_session_timeout=40000 \
+          --min_session_timeout=4000 \
+          --log_level=INFO"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "zookeeper-ready 2181"
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "zookeeper-ready 2181"
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: datadir
+          mountPath: /var/lib/zookeeper
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+      storageClassName: zk-pv   # 需要先运行 zookeeper-pv.yml 来创建好要用的持久卷
