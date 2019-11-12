@@ -82,8 +82,8 @@ spec:
                     - zk
               topologyKey: "kubernetes.io/hostname"   # 为了控制在同一主机上没有两个实例以实现高可用
       containers:
-      - name: zookeeper
-        imagePullPolicy: Always
+      - name: k8s-zookeeper
+        imagePullPolicy: Never    # IfNotPresent
         image: "k8s-zookeeper:3.5.6"
         resources:
           requests:
@@ -146,7 +146,7 @@ spec:
         command:
         - sh
         - -c
-        - "start-zookeeper \
+        - "start-zookeeper.sh \
           --servers=$ZK_REPLICAS \
           --data_dir=/var/lib/zookeeper/data \
           --data_log_dir=/var/lib/zookeeper/data/log \
@@ -169,7 +169,7 @@ spec:
             command:
             - sh
             - -c
-            - "zookeeper-ready 2181"
+            - "zookeeper-ready.sh 2181"
           initialDelaySeconds: 10
           timeoutSeconds: 5
         livenessProbe:
@@ -177,7 +177,7 @@ spec:
             command:
             - sh
             - -c
-            - "zookeeper-ready 2181"
+            - "zookeeper-ready.sh 2181"
           initialDelaySeconds: 10
           timeoutSeconds: 5
         volumeMounts:
