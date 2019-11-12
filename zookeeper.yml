@@ -150,7 +150,7 @@ spec:
           --servers=$ZK_REPLICAS \
           --data_dir=/var/lib/zookeeper/data \
           --data_log_dir=/var/lib/zookeeper/data/log \
-          --conf_dir=/opt/zookeeper/conf \
+          --conf_dir=/apache-zookeeper-3.5.6-bin/conf \
           --client_port=$ZK_CLIENT_PORT \
           --server_port=$ZK_SERVER_PORT \
           --election_port=$ZK_ELECTION_PORT \

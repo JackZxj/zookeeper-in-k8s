@@ -60,7 +60,7 @@
 #                         ERROR, WARN, INFO, DEBUG. The default is INFO.
 
 
-USER=`whoami`
+# USER=`whoami`
 HOST=`hostname -s`
 DOMAIN=`hostname -d`
 LOG_LEVEL=INFO
@@ -146,17 +146,17 @@ Starts a ZooKeeper server based on the supplied options.
 function create_data_dirs() {
     if [ ! -d $DATA_DIR  ]; then
         mkdir -p $DATA_DIR
-        chown -R $USER:$USER $DATA_DIR
+        # chown -R $USER:$USER $DATA_DIR
     fi
 
     if [ ! -d $DATA_LOG_DIR  ]; then
         mkdir -p $DATA_LOG_DIR
-        chown -R $USER:USER $DATA_LOG_DIR
+        # chown -R $USER:USER $DATA_LOG_DIR
     fi
 
     if [ ! -d $LOG_DIR  ]; then
         mkdir -p $LOG_DIR
-        chown -R $USER:$USER $LOG_DIR
+        # chown -R $USER:$USER $LOG_DIR
     fi
 
     if [ ! -f $ID_FILE ] && [ $SERVERS -gt 1 ]; then
@@ -309,4 +309,4 @@ fi
 
 MY_ID=$((ORD+1))
 
-create_config && create_jvm_props && create_log_props && create_data_dirs && exec zkServer.sh start-foreground
+create_config && create_data_dirs && create_jvm_props && create_log_props && exec zkServer.sh start-foreground
