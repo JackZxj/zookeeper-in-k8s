@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # zkOk.sh uses the ruok ZooKeeper four letter work to determine if the instance
 # is health. The $? variable will be set to 0 if server responds that it is 
 # healthy, or 1 if the server fails to respond.

@@ -1,5 +1,29 @@
 # application/zookeeper/zookeeper.yaml
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zk-cm
+data:
+  zkReplicas: "3"                  # zk集群中的节点数
+  ## zk配置，详见http://zookeeper.apache.org/doc/r3.5.6/zookeeperAdmin.html
+  dataDir: "/data"                 # 存储内存数据库快照的位置
+  tickTime: "2000"                 # 时间配置中的基本单位（以毫秒为单位）
+  dataLogDir: "/datalog"           # 将事务日志写入dataLogDir
+  confDir: "/conf"                 # zk节点的配置的路径
+  initLimit: "10"                  # 初始同步的最大间隔次数
+  syncLimit: "5"                   # 同步的最大间隔次数
+  maxClientCnxns: "60"             # 客户端连接的最大数量
+  autopurge.snapRetainCount: "3"   # 要保留在dataDir中的快照数
+  autopurge.purgeInterval: "12"    # 清除任务间隔（以小时为单位），0为禁用自动清除
+  admin.enableServer: "true"       # 内嵌的管理控制台是通过jetty启动,默认占用8080端口，选择是否启用
+  standaloneEnabled: "true"        # 设置为false时，可以以复制模式启动单个服务器，可以由观察者运行单个参与者，并且群集可以重新配置到一个节点，然后从一个节点。为了向后兼容，默认值为true。
+  minSessionTimeout: "4000"        # 服务器允许客户端进行协商的最小会话超时（以毫秒为单位）
+  maxSessionTimeout: "40000"       # 服务器允许客户端进行协商的最大会话超时（以毫秒为单位）
+  ## jvm 配置
+  logDir: "/logs"                  # java运行日志
+  jvmHeap: "500M"                  # jvm堆内存限制
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: zk-headless-service
@@ -28,20 +52,6 @@ spec:
   selector:
     app: zk
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: zk-cm
-data:
-  zk.replicas: "3"      # zk集群中的节点数
-  jvm.heap: "500M"      # jvm堆内存限制
-  tick: "2000"          # 时间配置中的基本单位（以毫秒为单位）
-  init: "10"            # 初始同步的最大间隔次数
-  sync: "5"             # 同步的最大间隔次数
-  client.cnxns: "60"    # 客户端连接的最大数量
-  snap.retain: "3"      # 要保留在dataDir中的快照数
-  purge.interval: "12"  # 清除任务间隔（以小时为单位），0为禁用自动清除
----
 # 设置应用POD集群处于运行状态最低个数
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
@@ -51,7 +61,7 @@ spec:
   selector:
     matchLabels:
       app: zk
-  maxUnavailable: 1   # 表示最大不可用PO数，表示应用POD集群处于不可用状态的最大POD数
+  maxUnavailable: 1   # 表示最大不可用POD数，表示应用POD集群处于不可用状态的最大POD数
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -88,7 +98,7 @@ spec:
         resources:
           requests:
             memory: "1Gi"   # 内存需求
-            cpu: "0.5"      # cpu使用率
+            cpu: "0.5"      # cpu频率
         ports:
         - containerPort: 2181
           name: client
@@ -96,80 +106,107 @@ spec:
           name: server
         - containerPort: 3888
           name: leader-election
+        - containerPort: 8080
+          name: admin-server
         env:
         - name : ZK_REPLICAS
           valueFrom:
             configMapKeyRef:
                 name: zk-cm
-                key: zk.replicas
+                key: zkReplicas
+        - name : ZOO_DATA_DIR
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: dataDir
+        - name : ZOO_TICK_TIME
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: tickTime
+        - name : ZOO_DATA_LOG_DIR
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: dataLogDir
+        - name : ZOO_CONF_DIR
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: confDir
+        - name : ZOO_INIT_LIMIT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: initLimit
+        - name : ZOO_SYNC_LIMIT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: syncLimit
+        - name : ZOO_MAX_CLIENT_CNXNS
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: maxClientCnxns
+        - name : ZOO_AUTOPURGE_SNAPRETAINCOUNT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: autopurge.snapRetainCount
+        - name : ZOO_AUTOPURGE_PURGEINTERVAL
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: autopurge.purgeInterval
+        - name : ZOO_ADMINSERVER_ENABLED
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: admin.enableServer
+        - name : ZOO_STANDALONE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: standaloneEnabled
+        - name : MIN_SESSION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: minSessionTimeout
+        - name : MAX_SESSION_TIMEOUT
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: maxSessionTimeout
+        - name : ZK_LOG_DIR
+          valueFrom:
+            configMapKeyRef:
+                name: zk-cm
+                key: logDir
         - name : ZK_HEAP_SIZE
           valueFrom:
             configMapKeyRef:
                 name: zk-cm
-                key: jvm.heap
-        - name : ZK_TICK_TIME
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: tick
-        - name : ZK_INIT_LIMIT
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: init
-        - name : ZK_SYNC_LIMIT
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: sync
-        - name : ZK_MAX_CLIENT_CNXNS
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: client.cnxns
-        - name: ZK_SNAP_RETAIN_COUNT
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: snap.retain
-        - name: ZK_PURGE_INTERVAL
-          valueFrom:
-            configMapKeyRef:
-                name: zk-cm
-                key: purge.interval
+                key: jvmHeap
         - name: ZK_CLIENT_PORT
           value: "2181"
         - name: ZK_SERVER_PORT
           value: "2888"
         - name: ZK_ELECTION_PORT
           value: "3888"
+        - name: LOG_LEVEL
+          value: "INFO"
         command:
         - sh
         - -c
-        - "start-zookeeper.sh \
-          --servers=$ZK_REPLICAS \
-          --data_dir=/var/lib/zookeeper/data \
-          --data_log_dir=/var/lib/zookeeper/data/log \
-          --conf_dir=/apache-zookeeper-3.5.6-bin/conf \
-          --client_port=$ZK_CLIENT_PORT \
-          --server_port=$ZK_SERVER_PORT \
-          --election_port=$ZK_ELECTION_PORT \
-          --tick_time=$ZK_TICK_TIME \
-          --init_limit=$ZK_INIT_LIMIT \
-          --sync_limit=$ZK_SYNC_LIMIT \
-          --heap=$ZK_HEAP_SIZE \
-          --max_client_cnxns=$ZK_MAX_CLIENT_CNXNS \
-          --snap_retain_count=$ZK_SNAP_RETAIN_COUNT \
-          --purge_interval=$ZK_PURGE_INTERVAL \
-          --max_session_timeout=40000 \
-          --min_session_timeout=4000 \
-          --log_level=INFO"
+        - "start-zookeeper"
         readinessProbe:
           exec:
             command:
             - sh
             - -c
-            - "zookeeper-ready.sh 2181"
+            - "zookeeper-ready 2181"
           initialDelaySeconds: 10
           timeoutSeconds: 5
         livenessProbe:
@@ -177,7 +214,7 @@ spec:
             command:
             - sh
             - -c
-            - "zookeeper-ready.sh 2181"
+            - "zookeeper-ready 2181"
           initialDelaySeconds: 10
           timeoutSeconds: 5
         volumeMounts:
