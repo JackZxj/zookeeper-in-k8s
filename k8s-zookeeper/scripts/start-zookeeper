@@ -40,10 +40,8 @@ function create_config() {
 
 function create_myid() {
     rm -f $ID_FILE
-    if [ ! -f $ID_FILE ] && [ $SERVERS -gt 1 ]; then
-        touch $ID_FILE
-        echo $MY_ID >> $ID_FILE
-    fi
+    touch $ID_FILE
+    echo $MY_ID >> $ID_FILE
 }
 
 function create_jvm_props() {
