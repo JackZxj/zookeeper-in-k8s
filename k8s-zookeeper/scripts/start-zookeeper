@@ -40,7 +40,6 @@ function create_config() {
 
 function create_myid() {
     rm -f $ID_FILE
-    touch $ID_FILE
     echo $MY_ID >> $ID_FILE
 }
 
