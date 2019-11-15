@@ -1,7 +1,5 @@
 FROM zookeeper:3.5.6
 
-MAINTAINER zhangxinjie01@inspur.com
-
 ADD ./scripts/* /apache-zookeeper-3.5.6-bin/bin/
 RUN chmod +x /apache-zookeeper-3.5.6-bin/bin/*
 
