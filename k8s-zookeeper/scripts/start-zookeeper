@@ -35,12 +35,19 @@ function create_config() {
     if [ $ZK_REPLICAS -gt 1 ]; then
         print_servers >> $CONFIG_FILE
     fi
+
+    echo "# Enable 4 world commands" >> "$CONFIG_FILE"
+    echo "4lw.commands.whitelist=*" >> "$CONFIG_FILE"
+
     cat $CONFIG_FILE >&2
 }
 
 function create_myid() {
     rm -f $ID_FILE
+    echo "######## Input myid to $ID_FILE ########"
     echo $MY_ID >> $ID_FILE
+
+    cat $ID_FILE >&2
 }
 
 function create_jvm_props() {
