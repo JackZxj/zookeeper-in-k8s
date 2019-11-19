@@ -75,7 +75,7 @@ spec:
   replicas: 3
   updateStrategy:
     type: RollingUpdate
-  podManagementPolicy: OrderedReady   # 采用顺序启动的方式
+  podManagementPolicy: Parallel        # 平行启动     #OrderedReady   # 采用顺序启动的方式
   template:
     metadata:
       labels:
