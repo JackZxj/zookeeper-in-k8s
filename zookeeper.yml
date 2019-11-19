@@ -231,4 +231,4 @@ spec:
       resources:
         requests:
           storage: 2Gi
-      storageClassName: zk-pv   # 需要先运行 zookeeper-pv.yml 来创建好要用的持久卷
+      storageClassName: local-storage   # 需要先运行 zk-local-pv.yml 来创建好要用的持久卷
