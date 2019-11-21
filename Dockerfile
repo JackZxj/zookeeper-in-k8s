@@ -10,7 +10,7 @@ RUN yum install -y wget nmap-ncat.x86_64;
 RUN set -eux;    wget -O openjdk.tgz "${JAVA_BASE_URL}x64_linux_${JAVA_URL_VERSION}.tar.gz";    mkdir -p "$JAVA_HOME";    tar --extract   --file openjdk.tgz   --directory "$JAVA_HOME"   --strip-components 1   --no-same-owner  ;    rm -f openjdk.tgz
 RUN set -eux;    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.11/gosu-amd64";    chmod +x /usr/local/bin/gosu;    gosu nobody true
 
-ENV ZOO_CONF_DIR=/conf ZOO_DATA_DIR=/data ZOO_DATA_LOG_DIR=/datalog ZOO_LOG_DIR=/logs ZOO_TICK_TIME=2000 ZOO_INIT_LIMIT=5 ZOO_SYNC_LIMIT=2 ZOO_AUTOPURGE_PURGEINTERVAL=0 ZOO_AUTOPURGE_SNAPRETAINCOUNT=3 ZOO_MAX_CLIENT_CNXNS=60 ZOO_STANDALONE_ENABLED=true ZOO_ADMINSERVER_ENABLED=true
+ENV ZOOCFGDIR=/conf ZOO_CONF_DIR=/conf ZOO_DATA_DIR=/data ZOO_DATA_LOG_DIR=/datalog ZOO_LOG_DIR=/logs ZOO_TICK_TIME=2000 ZOO_INIT_LIMIT=5 ZOO_SYNC_LIMIT=2 ZOO_AUTOPURGE_PURGEINTERVAL=0 ZOO_AUTOPURGE_SNAPRETAINCOUNT=3 ZOO_MAX_CLIENT_CNXNS=60 ZOO_STANDALONE_ENABLED=true ZOO_ADMINSERVER_ENABLED=true
 RUN set -eux;     groupadd -r zookeeper --gid=1000;     useradd -r -g zookeeper --uid=1000 zookeeper;     mkdir -p "$ZOO_DATA_LOG_DIR" "$ZOO_DATA_DIR" "$ZOO_CONF_DIR" "$ZOO_LOG_DIR";     chown zookeeper:zookeeper "$ZOO_DATA_LOG_DIR" "$ZOO_DATA_DIR" "$ZOO_CONF_DIR" "$ZOO_LOG_DIR"
 
 ARG SHORT_DISTRO_NAME=zookeeper-3.5.6
@@ -24,5 +24,4 @@ WORKDIR /apache-zookeeper-3.5.6-bin
 VOLUME [/data /datalog /logs]
 EXPOSE 2181 2888 3888 8080
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["zkServer.sh" "start-foreground"]
+CMD ["/docker-entrypoint.sh" "zkServer.sh" "start-foreground"]
