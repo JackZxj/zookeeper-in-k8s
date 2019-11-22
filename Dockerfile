@@ -24,4 +24,4 @@ WORKDIR /apache-zookeeper-3.5.6-bin
 VOLUME [/data /datalog /logs]
 EXPOSE 2181 2888 3888 8080
 
-CMD ["/docker-entrypoint.sh" "zkServer.sh" "start-foreground"]
+CMD [ "/docker-entrypoint.sh", "zkServer.sh", "start-foreground" ]
