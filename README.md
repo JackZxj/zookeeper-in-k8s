@@ -8,12 +8,13 @@
 
 ## Usage
 
-** Please use v2 **
+**Please use v2**
 
 ### Official zookeeper image
 
 Download `v2/zk-in-k8s.yaml` and use `kubectl apply -f v2/zk-in-k8s.yaml` to start service.
-Note: you should create your own `PV` and edit the last part of `zk-in-k8s.yaml` before apply it. You can use `v2/zk-local-pv.yaml` to create local storage, remember to edit it to your own hostname.
+
+**Note:** you should create your own `PV` and edit the last part of `zk-in-k8s.yaml` before apply it. You can use `v2/zk-local-pv.yaml` to create local storage, remember to edit it to your own hostname.
 
 Test case:
 ``` bash
